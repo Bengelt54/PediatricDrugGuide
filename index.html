@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pediatric Drug Reference</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the app */
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter font */
+            background-color: #f0f4f8; /* Light blue-gray background */
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background-color: #ffffff;
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Soft shadow */
+        }
+        .select-box {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e0; /* Light gray border */
+            background-color: #edf2f7; /* Slightly darker background for select */
+            font-size: 1rem;
+            color: #2d3748; /* Dark gray text */
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            width: 100%; /* Make select boxes full width */
+            appearance: none; /* Remove default select arrow */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'%3E%3C/path%3E%3C/svg%3E"); /* Custom arrow */
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.5em 1.5em;
+        }
+        .select-box:focus {
+            outline: none;
+            border-color: #63b3ed; /* Blue border on focus */
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); /* Blue glow on focus */
+        }
+        .info-card {
+            background-color: #f7fafc; /* Lighter background for info cards */
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e2e8f0; /* Subtle border */
+        }
+        .info-card h3 {
+            color: #2d3748;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+        .info-card p {
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+        }
+        .info-card p strong {
+            color: #1a202c;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 lg:p-8">
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Pediatric Drug Quick Reference</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <label for="ageSelect" class="block text-gray-700 text-sm font-semibold mb-2">Select Age:</label>
+                <select id="ageSelect" class="select-box">
+                    <option value="">-- Select an Age --</option>
+                </select>
+            </div>
+            <div>
+                <label for="drugSelect" class="block text-gray-700 text-sm font-semibold mb-2">Select Drug:</label>
+                <select id="drugSelect" class="select-box">
+                    <option value="">-- Select a Drug --</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="results" class="space-y-6">
+            <!-- New Weight Card -->
+            <div class="info-card" id="weightCard" style="display: none;">
+                <h3 class="text-xl">Weight</h3>
+                <p><strong>Pounds (lbs):</strong> <span id="weightLbs">N/A</span></p>
+                <p><strong>Kilograms (kg):</strong> <span id="weightKg">N/A</span></p>
+            </div>
+
+            <!-- Existing Cards -->
+            <div class="info-card" id="vitalsCard" style="display: none;">
+                <h3 class="text-xl">Vital Signs</h3>
+                <p><strong>Low Limit Systolic BP:</strong> <span id="systolicBp">N/A</span></p>
+                <p><strong>Pulse:</strong> <span id="pulse">N/A</span></p>
+            </div>
+
+            <div class="info-card" id="airwayCard" style="display: none;">
+                <h3 class="text-xl">Airway</h3>
+                <p><strong>ET Tube Size:</strong> <span id="etTube">N/A</span></p>
+            </div>
+
+            <div class="info-card" id="defibCard" style="display: none;">
+                <h3 class="text-xl">Defibrillation</h3>
+                <p><strong>Initial Dose:</strong> <span id="defibSettingInitial">N/A</span></p>
+                <p><strong>2nd Dose:</strong> <span id="defibSetting2nd">N/A</span></p>
+                <p><strong>3rd and Successive Doses:</strong> <span id="defibSetting3rdPlus">N/A</span></p>
+            </div>
+
+            <div class="info-card" id="drugDoseCard" style="display: none;">
+                <h3 class="text-xl">Drug Dose</h3>
+                <p><strong>Selected Drug:</strong> <span id="selectedDrugName">N/A</span></p>
+                <p><strong>Dose:</strong> <span id="drugDose">N/A</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data extracted from the provided images
+        const pediatricData = [
+            {
+                age: "0-3 m",
+                weight_lbs: "6-7",
+                weight_kg: 3,
+                vitals: {
+                    systolic_bp_low: "60-70",
+                    pulse: "100-180"
+                },
+                airway_et_tube: "3.0-3.5",
+                defibrillation: {
+                    initial_dose: "6 J",
+                    second_dose: "12 J", // 2 * 6 J
+                    third_plus_dose: "Up to 10 J/kg (max 100 J)"
+                },
+                drugs: {
+                    "Adenosine 3 mg/mL IV (0.1 mg/kg)": "0.3 mg (0.1 ml)",
+                    "Amiodarone 50 mg/mL IV/IO (5 mg/kg)": "15 mg (0.3 ml)",
+                    "Atropine 0.1 mg/mL IV/IO (0.02 mg/kg)": "0.06 mg (0.6 ml)",
+                    "Bicarbonate (Sodium) 8.4 % (1 mEq/mL) IV/IO": "N/A",
+                    "Dextrose 10%-IV/IO (5 mL/kg) (0.5 gm/kg)": "1.5 gm (15 ml)",
+                    "Diphenhydramine 50 mg/mL IM/IV (1 mg/kg)": "N/A",
+                    "Epinephrine 0.1 mg/ml IV/IO (0.01 mg/kg)": "0.03 mg (0.3 ml)",
+                    "Epinephrine 1 mg/ml IM (0.01 mg/kg)": "N/A",
+                    "Epinephrine 10 mcg/ml IV-Push Dose (3 mcg/kg)": "5 mcg (0.5 mL)",
+                    "Fentanyl 50 mcg/mL IV/IO/IM/SC (1 mcg/kg)": "N/A",
+                    "Fentanyl 50 mcg/ml IN (2 mcg/kg)": "N/A",
+                    "Hypertonic 3 % saline ONCE, max 500mL (For Increased Intracranial Pressure)": "12 ml",
+                    "Lidocaine 2 % (20 mg/mL) IV/IO (ARREST DOSE) (1 mg/kg)": "3 mg (0.15 mL)",
+                    "Lidocaine 2 % (20 mg/mL) (for numbing before IO infusions)": "N/A",
+                    "Methylprednisolone 62.5 mg/mL-IV/IO/IM/PO": "N/A",
+                    "Midazolam 5 mg/mL (Seizures-IM/IN/Buccal) (0.2 mg/kg)": "0.6 mg (0.12 mL)",
+                    "Midazolam 5 mg/ml (Seizures-IV) (0.1 mg/kg)": "0.3 mg (0.06 mL)",
+                    "Midazolam 5 mg/mL (Sedation-IV/IO) (0.1 mg/kg)": "0.3mg (0.06 mi)",
+                    "Midazolam 5 mg/ml (Sedation-IM/IN) (0.2 mg/kg)": "0.6 mg (0.12 ml)",
+                    "Naloxone 1 mg/ml All Routes (0.1 mg/kg)": "0.3 mg (0.3 ml)",
+                    "Normal Saline Bolus (20 ml/kg)": "60 ml",
+                    "Ondansetron 2 mg/ml IV": "N/A",
+                    "Prednisone 20 mg tablets": "N/A",
+                    "Tranexamic Acid 10 mg/ml": "45 mg (4.5 ml)"
+                }
+            },
+            {
+                age: "6 m",
+                weight_lbs: "11",
+                weight_kg: 5,
+                vitals: {
+                    systolic_bp_low: "70",
+                    pulse: "100-180"
+                },
+                airway_et_tube: "3.5",
+                defibrillation: {
+                    initial_dose: "10 J",
+                    second_dose: "20 J", // 2 * 10 J
+                    third_plus_dose: "Up to 10 J/kg (max 100 J)"
+                },
+                drugs: {
+                    "Adenosine 3 mg/mL IV (0.1 mg/kg)": "0.5 mg (0.17 mL)",
+                    "Amiodarone 50 mg/mL IV/IO (5 mg/kg)": "25 mg (0.5 ml)",
+                    "Atropine 0.1 mg/mL IV/IO (0.02 mg/kg)": "0.1 mg (1 ml)",
+                    "Bicarbonate (Sodium) 8.4 % (1 mEq/mL) IV/IO": "5 mEq (5 ml)",
+                    "Dextrose 10%-IV/IO (5 mL/kg) (0.5 gm/kg)": "2.5 gm (25 ml)",
+                    "Diphenhydramine 50 mg/mL IM/IV (1 mg/kg)": "N/A",
+                    "Epinephrine 0.1 mg/ml IV/IO (0.01 mg/kg)": "0.05 mg (0.5ml)",
+                    "Epinephrine 1 mg/ml IM (0.01 mg/kg)": "0.05 mg (0.05 mL)",
+                    "Epinephrine 10 mcg/ml IV-Push Dose (3 mcg/kg)": "10 mcg (1 mL)",
+                    "Fentanyl 50 mcg/mL IV/IO/IM/SC (1 mcg/kg)": "5 mcg (0.1 ml)",
+                    "Fentanyl 50 mcg/ml IN (2 mcg/kg)": "10 mcg (0.2 ml)",
+                    "Hypertonic 3 % saline ONCE, max 500mL (For Increased Intracranial Pressure)": "20 ml",
+                    "Lidocaine 2 % (20 mg/mL) IV/IO (ARREST DOSE) (1 mg/kg)": "5 mg (0.25 ml)",
+                    "Lidocaine 2 % (20 mg/mL) (for numbing before IO infusions)": "N/A",
+                    "Methylprednisolone 62.5 mg/mL-IV/IO/IM/PO": "N/A",
+                    "Midazolam 5 mg/mL (Seizures-IM/IN/Buccal) (0.2 mg/kg)": "1 mg (0.2 mL)",
+                    "Midazolam 5 mg/ml (Seizures-IV) (0.1 mg/kg)": "0.5 mg (0.1 mi)",
+                    "Midazolam 5 mg/mL (Sedation-IV/IO) (0.1 mg/kg)": "0.5 mg (0.1 ml)",
+                    "Midazolam 5 mg/ml (Sedation-IM/IN) (0.2 mg/kg)": "1 mg (0.2 ml)",
+                    "Naloxone 1 mg/ml All Routes (0.1 mg/kg)": "0.5 mg (0.5 mL)",
+                    "Normal Saline Bolus (20 ml/kg)": "100 ml",
+                    "Ondansetron 2 mg/ml IV": "N/A",
+                    "Prednisone 20 mg tablets": "N/A",
+                    "Tranexamic Acid 10 mg/ml": "75 mg (7.5 mL)"
+                }
+            },
+            {
+                age: "9-24 m",
+                weight_lbs: "20",
+                weight_kg: 10,
+                vitals: {
+                    systolic_bp_low: "70-75",
+                    pulse: "90-160"
+                },
+                airway_et_tube: "4.0-4.5",
+                defibrillation: {
+                    initial_dose: "20 J",
+                    second_dose: "40 J", // 2 * 20 J
+                    third_plus_dose: "Up to 10 J/kg (max 100 J)"
+                },
+                drugs: {
+                    "Adenosine 3 mg/mL IV (0.1 mg/kg)": "1 mg (0.33 mL)",
+                    "Amiodarone 50 mg/mL IV/IO (5 mg/kg)": "50 mg (1 ml)",
+                    "Atropine 0.1 mg/mL IV/IO (0.02 mg/kg)": "0.2 mg (2 ml)",
+                    "Bicarbonate (Sodium) 8.4 % (1 mEq/mL) IV/IO": "10 mEq (10 ml)",
+                    "Dextrose 10%-IV/IO (5 mL/kg) (0.5 gm/kg)": "5 gm (50 ml)",
+                    "Diphenhydramine 50 mg/mL IM/IV (1 mg/kg)": "10 mg (0.2ml)",
+                    "Epinephrine 0.1 mg/ml IV/IO (0.01 mg/kg)": "0.1 mg (1 ml)",
+                    "Epinephrine 1 mg/ml IM (0.01 mg/kg)": "0.1 mg (0.1m)",
+                    "Epinephrine 10 mcg/ml IV-Push Dose (3 mcg/kg)": "10 mcg (1.5 mL)",
+                    "Fentanyl 50 mcg/mL IV/IO/IM/SC (1 mcg/kg)": "10 mcg (0.2 ml)",
+                    "Fentanyl 50 mcg/ml IN (2 mcg/kg)": "20 mcg (0.4 ml)",
+                    "Hypertonic 3 % saline ONCE, max 500mL (For Increased Intracranial Pressure)": "40 ml",
+                    "Lidocaine 2 % (20 mg/mL) IV/IO (ARREST DOSE) (1 mg/kg)": "10 mg (0.5 ml)",
+                    "Lidocaine 2 % (20 mg/mL) (for numbing before IO infusions)": "N/A",
+                    "Methylprednisolone 62.5 mg/mL-IV/IO/IM/PO": "N/A",
+                    "Midazolam 5 mg/mL (Seizures-IM/IN/Buccal) (0.2 mg/kg)": "2 mg (0.4 mi)",
+                    "Midazolam 5 mg/ml (Seizures-IV) (0.1 mg/kg)": "1 mg (0.2ml)",
+                    "Midazolam 5 mg/mL (Sedation-IV/IO) (0.1 mg/kg)": "1 mg (02)",
+                    "Midazolam 5 mg/ml (Sedation-IM/IN) (0.2 mg/kg)": "2 mg",
+                    "Naloxone 1 mg/ml All Routes (0.1 mg/kg)": "1 mg (1mL)",
+                    "Normal Saline Bolus (20 ml/kg)": "200 ml",
+                    "Ondansetron 2 mg/ml IV": "1.5 mg (0.75 ml)",
+                    "Prednisone 20 mg tablets": "N/A",
+                    "Tranexamic Acid 10 mg/ml": "150 mg (15 mi)"
+                }
+            },
+            {
+                age: "3 y",
+                weight_lbs: "30",
+                weight_kg: 15,
+                vitals: {
+                    systolic_bp_low: "75-80",
+                    pulse: "80-140"
+                },
+                airway_et_tube: "5.0",
+                defibrillation: {
+                    initial_dose: "30 J",
+                    second_dose: "60 J", // 2 * 30 J
+                    third_plus_dose: "Up to 10 J/kg (max 100 J)"
+                },
+                drugs: {
+                    "Adenosine 3 mg/mL IV (0.1 mg/kg)": "1.5 mg (0.5 mL)",
+                    "Amiodarone 50 mg/mL IV/IO (5 mg/kg)": "75 mg (1.5 mL)",
+                    "Atropine 0.1 mg/mL IV/IO (0.02 mg/kg)": "0.3 mg (3 ml)",
+                    "Bicarbonate (Sodium) 8.4 % (1 mEq/mL) IV/IO": "15 mEq (15 mL)",
+                    "Dextrose 10%-IV/IO (5 mL/kg) (0.5 gm/kg)": "7.5 gm (75 mL)",
+                    "Diphenhydramine 50 mg/mL IM/IV (1 mg/kg)": "15 mg (0.3 mL)",
+                    "Epinephrine 0.1 mg/ml IV/IO (0.01 mg/kg)": "0.15 mg (1.5 mL)",
+                    "Epinephrine 1 mg/ml IM (0.01 mg/kg)": "0.15 mg (0.15 ml)",
+                    "Epinephrine 10 mcg/ml IV-Push Dose (3 mcg/kg)": "15 mcg (1.5 ml)",
+                    "Fentanyl 50 mcg/mL IV/IO/IM/SC (1 mcg/kg)": "15 mcg (0.3 ml)",
+                    "Fentanyl 50 mcg/ml IN (2 mcg/kg)": "30 mcg (0.6 mL)",
+                    "Hypertonic 3 % saline ONCE, max 500mL (For Increased Intracranial Pressure)": "60 ml",
+                    "Lidocaine 2 % (20 mg/mL) IV/IO (ARREST DOSE) (1 mg/kg)": "15 mg (0.75 mL)",
+                    "Lidocaine 2 % (20 mg/mL) (for numbing before IO infusions)": "N/A",
+                    "Methylprednisolone 62.5 mg/mL-IV/IO/IM/PO": "30 mg (0.5 mL)",
+                    "Midazolam 5 mg/mL (Seizures-IM/IN/Buccal) (0.2 mg/kg)": "3 mg (0.6 mL)",
+                    "Midazolam 5 mg/ml (Seizures-IV) (0.1 mg/kg)": "1.5 mg (0.3 mi)",
+                    "Midazolam 5 mg/mL (Sedation-IV/IO) (0.1 mg/kg)": "1.5 mg (0.3 mi)",
+                    "Midazolam 5 mg/ml (Sedation-IM/IN) (0.2 mg/kg)": "3 mg (0.6 mL)",
+                    "Naloxone 1 mg/ml All Routes (0.1 mg/kg)": "1.5 mg (1.5 ml)",
+                    "Normal Saline Bolus (20 ml/kg)": "300 mL",
+                    "Ondansetron 2 mg/ml IV": "2 mg (1 ml)",
+                    "Prednisone 20 mg tablets": "30 mg (1.5 tabs)",
+                    "Tranexamic Acid 10 mg/ml": "225 mg (22.5 mL)"
+                }
+            },
+            {
+                age: "4 y",
+                weight_lbs: "40",
+                weight_kg: 20,
+                vitals: {
+                    systolic_bp_low: "80",
+                    pulse: "70-130"
+                },
+                airway_et_tube: "5.5",
+                defibrillation: {
+                    initial_dose: "40 J",
+                    second_dose: "80 J", // 2 * 40 J
+                    third_plus_dose: "Up to 10 J/kg (max 100 J)"
+                },
+                drugs: {
+                    "Adenosine 3 mg/mL IV (0.1 mg/kg)": "2 mg (0.67 mL)",
+                    "Amiodarone 50 mg/mL IV/IO (5 mg/kg)": "100 mg (2 ml)",
+                    "Atropine 0.1 mg/mL IV/IO (0.02 mg/kg)": "0.4 mg (4 ml)",
+                    "Bicarbonate (Sodium) 8.4 % (1 mEq/mL) IV/IO": "20 mEq (20 mL)",
+                    "Dextrose 10%-IV/IO (5 mL/kg) (0.5 gm/kg)": "10 gm (100 ml)",
+                    "Diphenhydramine 50 mg/mL IM/IV (1 mg/kg)": "20 mg (0.4 ml)",
+                    "Epinephrine 0.1 mg/ml IV/IO (0.01 mg/kg)": "0.2 mg (2ml)",
+                    "Epinephrine 1 mg/ml IM (0.01 mg/kg)": "0.2 mg (0.2 ml)",
+                    "Epinephrine 10 mcg/ml IV-Push Dose (3 mcg/kg)": "20 mcg (2 ml)",
+                    "Fentanyl 50 mcg/mL IV/IO/IM/SC (1 mcg/kg)": "20 mcg (0.4 ml)",
+                    "Fentanyl 50 mcg/ml IN (2 mcg/kg)": "40 mcg (0.8 ml)",
+                    "Hypertonic 3 % saline ONCE, max 500mL (For Increased Intracranial Pressure)": "80 ml",
+                    "Lidocaine 2 % (20 mg/mL) IV/IO (ARREST DOSE) (1 mg/kg)": "20 mg (1 ml)",
+                    "Lidocaine 2 % (20 mg/mL) (for numbing before IO infusions)": "N/A",
+                    "Methylprednisolone 62.5 mg/mL-IV/IO/IM/PO": "30 mg (0.5 mL)",
+                    "Midazolam 5 mg/mL (Seizures-IM/IN/Buccal) (0.2 mg/kg)": "5 mg (1 mL)",
+                    "Midazolam 5 mg/ml (Seizures-IV) (0.1 mg/kg)": "2 mg",
+                    "Midazolam 5 mg/mL (Sedation-IV/IO) (0.1 mg/kg)": "2 mg (0.4 m)",
+                    "Midazolam 5 mg/ml (Sedation-IM/IN) (0.2 mg/kg)": "4 mg",
+                    "Naloxone 1 mg/ml All Routes (0.1 mg/kg)": "2 mg (2ml)",
+                    "Normal Saline Bolus (20 ml/kg)": "400 ml",
+                    "Ondansetron 2 mg/ml IV": "3 mg (1.5 ml)",
+                    "Prednisone 20 mg tablets": "30 mg (1.5 tabs)",
+                    "Tranexamic Acid 10 mg/ml": "300 mg (30 mL)"
+                }
+            },
+            {
+                age: "6 y",
+                weight_lbs: "40",
+                weight_kg: 20,
+                vitals: {
+                    systolic_bp_low: "80",
+                    pulse: "70-130"
+                },
+                airway_et_tube: "5.5", // Updated
+                defibrillation: {
+                    initial_dose: "40 J", // Updated
+                    second_dose: "80 J", // Recalculated
+                    third_plus_dose: "Up to 10 J/kg (max 100 J)"
+                },
+                drugs: {
+                    "Adenosine 3 mg/mL IV (0.1 mg/kg)": "2.5 mg (0.83 mL)",
+                    "Amiodarone 50 mg/mL IV/IO (5 mg/kg)": "125 mg (2.5 mL)",
+                    "Atropine 0.1 mg/mL IV/IO (0.02 mg/kg)": "0.5 mg (5 ml)",
+                    "Bicarbonate (Sodium) 8.4 % (1 mEq/mL) IV/IO": "25 mEq (25ml)",
+                    "Dextrose 10%-IV/IO (5 mL/kg) (0.5 gm/kg)": "12.5 gm (125 ml)",
+                    "Diphenhydramine 50 mg/mL IM/IV (1 mg/kg)": "25 mg (0.5 mL)",
+                    "Epinephrine 0.1 mg/ml IV/IO (0.01 mg/kg)": "0.25 mg (2.5 mL)",
+                    "Epinephrine 1 mg/ml IM (0.01 mg/kg)": "0.25 mg (0.25 mL)",
+                    "Epinephrine 10 mcg/ml IV-Push Dose (3 mcg/kg)": "20 mcg (2 ml)",
+                    "Fentanyl 50 mcg/mL IV/IO/IM/SC (1 mcg/kg)": "25 mcg (0.5 mL)",
+                    "Fentanyl 50 mcg/ml IN (2 mcg/kg)": "50 mcg (1 ml)",
+                    "Hypertonic 3 % saline ONCE, max 500mL (For Increased Intracranial Pressure)": "100 ml",
+                    "Lidocaine 2 % (20 mg/mL) IV/IO (ARREST DOSE) (1 mg/kg)": "25 mg (1.25 ml)",
+                    "Lidocaine 2 % (20 mg/mL) (for numbing before IO infusions)": "N/A",
+                    "Methylprednisolone 62.5 mg/mL-IV/IO/IM/PO": "60 mg (1 mL)",
+                    "Midazolam 5 mg/mL (Seizures-IM/IN/Buccal) (0.2 mg/kg)": "5 mg (1 mL)",
+                    "Midazolam 5 mg/ml (Seizures-IV) (0.1 mg/kg)": "2.5 mg (0.5 mL)",
+                    "Midazolam 5 mg/mL (Sedation-IV/IO) (0.1 mg/kg)": "2.5 mg (0.5 ml)",
+                    "Midazolam 5 mg/ml (Sedation-IM/IN) (0.2 mg/kg)": "5 mg (1 mL)",
+                    "Naloxone 1 mg/ml All Routes (0.1 mg/kg)": "2 mg",
+                    "Normal Saline Bolus (20 ml/kg)": "500 ml",
+                    "Ondansetron 2 mg/ml IV": "3 mg (1.5 ml)",
+                    "Prednisone 20 mg tablets": "60 mg (3 tabs)",
+                    "Tranexamic Acid 10 mg/ml": "375 mg (37.5 mL)"
+                }
+            },
+            {
+                age: "8 y",
+                weight_lbs: "50",
+                weight_kg: 25,
+                vitals: {
+                    systolic_bp_low: "85",
+                    pulse: "60-120"
+                },
+                airway_et_tube: "6.5",
+                defibrillation: {
+                    initial_dose: "60 J",
+                    second_dose: "120 J", // 2 * 60 J
+                    third_plus_dose: "Up to 10 J/kg (max 100 J)" // Capped at 100J for display based on max adult dose
+                },
+                drugs: {
+                    "Adenosine 3 mg/mL IV (0.1 mg/kg)": "3 mg (1 ml)",
+                    "Amiodarone 50 mg/mL IV/IO (5 mg/kg)": "150 mg (3 mL)",
+                    "Atropine 0.1 mg/mL IV/IO (0.02 mg/kg)": "0.5 mg (5 ml)",
+                    "Bicarbonate (Sodium) 8.4 % (1 mEq/mL) IV/IO": "30 mEq (30 mL)",
+                    "Dextrose 10%-IV/IO (5 mL/kg) (0.5 gm/kg)": "15 gm (150 ml)",
+                    "Diphenhydramine 50 mg/mL IM/IV (1 mg/kg)": "30 mg (0.6 mL)",
+                    "Epinephrine 0.1 mg/ml IV/IO (0.01 mg/kg)": "0.3 mg (3 mL)",
+                    "Epinephrine 1 mg/ml IM (0.01 mg/kg)": "0.3 mg (0.3 mL)",
+                    "Epinephrine 10 mcg/ml IV-Push Dose (3 mcg/kg)": "20 mcg (2 ml)",
+                    "Fentanyl 50 mcg/mL IV/IO/IM/SC (1 mcg/kg)": "30 mcg (0.6 mL)",
+                    "Fentanyl 50 mcg/ml IN (2 mcg/kg)": "60 mcg (1.2 ml)",
+                    "Hypertonic 3 % saline ONCE, max 500mL (For Increased Intracranial Pressure)": "120mL",
+                    "Lidocaine 2 % (20 mg/mL) IV/IO (ARREST DOSE) (1 mg/kg)": "30 mg (1.5 ml)",
+                    "Lidocaine 2 % (20 mg/mL) (for numbing before IO infusions)": "N/A",
+                    "Methylprednisolone 62.5 mg/mL-IV/IO/IM/PO": "60 mg (1 mL)",
+                    "Midazolam 5 mg/mL (Seizures-IM/IN/Buccal) (0.2 mg/kg)": "5 mg (1 mL)",
+                    "Midazolam 5 mg/ml (Seizures-IV) (0.1 mg/kg)": "3 mg",
+                    "Midazolam 5 mg/mL (Sedation-IV/IO) (0.1 mg/kg)": "3 mg (0.6 mL)",
+                    "Midazolam 5 mg/ml (Sedation-IM/IN) (0.2 mg/kg)": "6 mg (1.2.mi)",
+                    "Naloxone 1 mg/ml All Routes (0.1 mg/kg)": "2 mg",
+                    "Normal Saline Bolus (20 ml/kg)": "600 ml",
+                    "Ondansetron 2 mg/ml IV": "4 mg (2 ml)",
+                    "Prednisone 20 mg tablets": "60 mg (3 tabs)",
+                    "Tranexamic Acid 10 mg/ml": "450 mg (45 ml)"
+                }
+            },
+            {
+                age: "10 y",
+                weight_lbs: "80",
+                weight_kg: 40,
+                vitals: {
+                    systolic_bp_low: "85",
+                    pulse: "60-120"
+                },
+                airway_et_tube: "7.0",
+                defibrillation: {
+                    initial_dose: "80 J",
+                    second_dose: "160 J", // 2 * 80 J
+                    third_plus_dose: "Up to 10 J/kg (max 100 J)" // Capped at 100J for display based on max adult dose
+                },
+                drugs: {
+                    "Adenosine 3 mg/mL IV (0.1 mg/kg)": "4 mg (1.3 mL)",
+                    "Amiodarone 50 mg/mL IV/IO (5 mg/kg)": "200 mg (4 mL)",
+                    "Atropine 0.1 mg/mL IV/IO (0.02 mg/kg)": "0.5 mg (5 mL)",
+                    "Bicarbonate (Sodium) 8.4 % (1 mEq/mL) IV/IO": "40 mEq (40 mL)",
+                    "Dextrose 10%-IV/IO (5 mL/kg) (0.5 gm/kg)": "20 gm (200 ml)",
+                    "Diphenhydramine 50 mg/mL IM/IV (1 mg/kg)": "40 mg (0.8mL)",
+                    "Epinephrine 0.1 mg/ml IV/IO (0.01 mg/kg)": "0.4 mg (4 mL)",
+                    "Epinephrine 1 mg/ml IM (0.01 mg/kg)": "0.3 mg (0.3 mL)",
+                    "Epinephrine 10 mcg/ml IV-Push Dose (3 mcg/kg)": "20 mcg (2 ml)",
+                    "Fentanyl 50 mcg/mL IV/IO/IM/SC (1 mcg/kg)": "40 mcg (0.8 mL)",
+                    "Fentanyl 50 mcg/ml IN (2 mcg/kg)": "80 mcg (1.6 mL)",
+                    "Hypertonic 3 % saline ONCE, max 500mL (For Increased Intracranial Pressure)": "160 mL",
+                    "Lidocaine 2 % (20 mg/mL) IV/IO (ARREST DOSE) (1 mg/kg)": "40 mg (2 mL)",
+                    "Lidocaine 2 % (20 mg/mL) (for numbing before IO infusions)": "3 ml",
+                    "Methylprednisolone 62.5 mg/mL-IV/IO/IM/PO": "60 mg (1 mL)",
+                    "Midazolam 5 mg/mL (Seizures-IM/IN/Buccal) (0.2 mg/kg)": "10 mg (2 mL)",
+                    "Midazolam 5 mg/ml (Seizures-IV) (0.1 mg/kg)": "4 mg (0.8 mL)",
+                    "Midazolam 5 mg/mL (Sedation-IV/IO) (0.1 mg/kg)": "4 ng (0.8 mL)",
+                    "Midazolam 5 mg/ml (Sedation-IM/IN) (0.2 mg/kg)": "8 mg (1.6 mL)",
+                    "Naloxone 1 mg/ml All Routes (0.1 mg/kg)": "2 mg",
+                    "Normal Saline Bolus (20 ml/kg)": "800 ml",
+                    "Ondansetron 2 mg/ml IV": "4 mg (2 ml)",
+                    "Prednisone 20 mg tablets": "60 mg (3 tabs)",
+                    "Tranexamic Acid 10 mg/ml": "1000 mg (100 mL)"
+                }
+            },
+            {
+                age: "12 y",
+                weight_lbs: "80",
+                weight_kg: 40,
+                vitals: {
+                    systolic_bp_low: "90",
+                    pulse: "60-120"
+                },
+                airway_et_tube: "7.0",
+                defibrillation: {
+                    initial_dose: "100 J",
+                    second_dose: "200 J", // 2 * 100 J
+                    third_plus_dose: "Up to 10 J/kg (max 100 J)" // Capped at 100J for display based on max adult dose
+                },
+                drugs: {
+                    "Adenosine 3 mg/mL IV (0.1 mg/kg)": "5 mg (1.7ml)",
+                    "Amiodarone 50 mg/mL IV/IO (5 mg/kg)": "250 mg (5 mL)",
+                    "Atropine 0.1 mg/mL IV/IO (0.02 mg/kg)": "0.5 mg (5 mL)",
+                    "Bicarbonate (Sodium) 8.4 % (1 mEq/mL) IV/IO": "50 mEq (50 mL)",
+                    "Dextrose 10%-IV/IO (5 mL/kg) (0.5 gm/kg)": "25 gm (250 ml)",
+                    "Diphenhydramine 50 mg/mL IM/IV (1 mg/kg)": "50 mg (1 mL)",
+                    "Epinephrine 0.1 mg/ml IV/IO (0.01 mg/kg)": "0.5 mg (5 mL)",
+                    "Epinephrine 1 mg/ml IM (0.01 mg/kg)": "0.3 mg (0.3mL)",
+                    "Epinephrine 10 mcg/ml IV-Push Dose (3 mcg/kg)": "20 mcg (2 mL)",
+                    "Fentanyl 50 mcg/mL IV/IO/IM/SC (1 mcg/kg)": "50 mcg (1 mL)",
+                    "Fentanyl 50 mcg/ml IN (2 mcg/kg)": "100mg (2 mL)",
+                    "Hypertonic 3 % saline ONCE, max 500mL (For Increased Intracranial Pressure)": "200 ml",
+                    "Lidocaine 2 % (20 mg/mL) IV/IO (ARREST DOSE) (1 mg/kg)": "50 mg (2.5 mL)",
+                    "Lidocaine 2 % (20 mg/mL) (for numbing before IO infusions)": "1 ml",
+                    "Methylprednisolone 62.5 mg/mL-IV/IO/IM/PO": "60 mg (1 mL)",
+                    "Midazolam 5 mg/mL (Seizures-IM/IN/Buccal) (0.2 mg/kg)": "10 mg (2 mL)",
+                    "Midazolam 5 mg/ml (Seizures-IV) (0.1 mg/kg)": "5 mg",
+                    "Midazolam 5 mg/mL (Sedation-IV/IO) (0.1 mg/kg)": "5mg (1 mL)",
+                    "Midazolam 5 mg/ml (Sedation-IM/IN) (0.2 mg/kg)": "10 mg",
+                    "Naloxone 1 mg/ml All Routes (0.1 mg/kg)": "2 mg",
+                    "Normal Saline Bolus (20 ml/kg)": "1000 mL",
+                    "Ondansetron 2 mg/ml IV": "4 mg (2 mL)",
+                    "Prednisone 20 mg tablets": "60 mg (3 tabs)",
+                    "Tranexamic Acid 10 mg/ml": "1000 mg (100 ml)"
+                }
+            },
+            {
+                age: "14 y",
+                weight_lbs: "100+", // Based on image, it's 100+ after 12y
+                weight_kg: 50, // Assuming weight doesn't increase significantly beyond 12y data point
+                vitals: {
+                    systolic_bp_low: "90",
+                    pulse: "60-120"
+                },
+                airway_et_tube: "7.0",
+                defibrillation: {
+                    initial_dose: "100 J", // Maxed out at 100J
+                    second_dose: "200 J", // 2 * 100 J
+                    third_plus_dose: "Up to 10 J/kg (max 100 J)" // Capped at 100J for display based on max adult dose
+                },
+                drugs: {
+                    "Adenosine 3 mg/mL IV (0.1 mg/kg)": "5 mg (1.7ml)",
+                    "Amiodarone 50 mg/mL IV/IO (5 mg/kg)": "250 mg (5 mL)",
+                    "Atropine 0.1 mg/mL IV/IO (0.02 mg/kg)": "0.5 mg (5 mL)",
+                    "Bicarbonate (Sodium) 8.4 % (1 mEq/mL) IV/IO": "50 mEq (50 mL)",
+                    "Dextrose 10%-IV/IO (5 mL/kg) (0.5 gm/kg)": "25 gm (250 ml)",
+                    "Diphenhydramine 50 mg/mL IM/IV (1 mg/kg)": "50 mg (1 mL)",
+                    "Epinephrine 0.1 mg/ml IV/IO (0.01 mg/kg)": "0.5 mg (5 mL)",
+                    "Epinephrine 1 mg/ml IM (0.01 mg/kg)": "0.3 mg (0.3mL)",
+                    "Epinephrine 10 mcg/ml IV-Push Dose (3 mcg/kg)": "20 mcg (2 mL)",
+                    "Fentanyl 50 mcg/mL IV/IO/IM/SC (1 mcg/kg)": "50 mcg (1 mL)",
+                    "Fentanyl 50 mcg/ml IN (2 mcg/kg)": "100mg (2 mL)",
+                    "Hypertonic 3 % saline ONCE, max 500mL (For Increased Intracranial Pressure)": "200 ml",
+                    "Lidocaine 2 % (20 mg/mL) IV/IO (ARREST DOSE) (1 mg/kg)": "50 mg (2.5 mL)",
+                    "Lidocaine 2 % (20 mg/mL) (for numbing before IO infusions)": "1 ml",
+                    "Methylprednisolone 62.5 mg/mL-IV/IO/IM/PO": "60 mg (1 mL)",
+                    "Midazolam 5 mg/mL (Seizures-IM/IN/Buccal) (0.2 mg/kg)": "10 mg (2 mL)",
+                    "Midazolam 5 mg/ml (Seizures-IV) (0.1 mg/kg)": "5 mg",
+                    "Midazolam 5 mg/mL (Sedation-IV/IO) (0.1 mg/kg)": "5mg (1 mL)",
+                    "Midazolam 5 mg/ml (Sedation-IM/IN) (0.2 mg/kg)": "10 mg",
+                    "Naloxone 1 mg/ml All Routes (0.1 mg/kg)": "2 mg",
+                    "Normal Saline Bolus (20 ml/kg)": "1000 mL",
+                    "Ondansetron 2 mg/ml IV": "4 mg (2 mL)",
+                    "Prednisone 20 mg tablets": "60 mg (3 tabs)",
+                    "Tranexamic Acid 10 mg/ml": "1000 mg (100 ml)"
+                }
+            }
+        ];
+
+        // Get references to DOM elements
+        const ageSelect = document.getElementById('ageSelect');
+        const drugSelect = document.getElementById('drugSelect');
+        const weightCard = document.getElementById('weightCard');
+        const vitalsCard = document.getElementById('vitalsCard');
+        const airwayCard = document.getElementById('airwayCard');
+        const defibCard = document.getElementById('defibCard');
+        const drugDoseCard = document.getElementById('drugDoseCard');
+
+        const weightLbsSpan = document.getElementById('weightLbs');
+        const weightKgSpan = document.getElementById('weightKg');
+        const systolicBpSpan = document.getElementById('systolicBp');
+        const pulseSpan = document.getElementById('pulse');
+        const etTubeSpan = document.getElementById('etTube');
+        const defibSettingInitialSpan = document.getElementById('defibSettingInitial');
+        const defibSetting2ndSpan = document.getElementById('defibSetting2nd');
+        const defibSetting3rdPlusSpan = document.getElementById('defibSetting3rdPlus');
+        const selectedDrugNameSpan = document.getElementById('selectedDrugName');
+        const drugDoseSpan = document.getElementById('drugDose');
+
+        let currentAgeData = null; // To store the data for the currently selected age
+
+        /**
+         * Populates the age dropdown with options from the pediatricData.
+         */
+        function populateAgeDropdown() {
+            ageSelect.innerHTML = '<option value="">-- Select an Age --</option>'; // Clear existing options
+            pediatricData.forEach(data => {
+                const option = document.createElement('option');
+                option.value = data.age;
+                option.textContent = data.age;
+                ageSelect.appendChild(option);
+            });
+        }
+
+        /**
+         * Populates the drug dropdown with all available drugs.
+         * It extracts all unique drug names from the pediatricData.
+         */
+        function populateDrugDropdown() {
+            drugSelect.innerHTML = '<option value="">-- Select a Drug --</option>'; // Clear existing options
+            const allDrugNames = new Set();
+            pediatricData.forEach(ageGroup => {
+                Object.keys(ageGroup.drugs).forEach(drugName => {
+                    allDrugNames.add(drugName);
+                });
+            });
+
+            // Convert set to array and sort alphabetically
+            const sortedDrugNames = Array.from(allDrugNames).sort();
+
+            sortedDrugNames.forEach(drugName => {
+                const option = document.createElement('option');
+                option.value = drugName;
+                option.textContent = drugName;
+                drugSelect.appendChild(option);
+            });
+        }
+
+        /**
+         * Updates the displayed information (weight, vitals, ET tube, defib, drug dose)
+         * based on the selected age and drug.
+         */
+        function updateResults() {
+            const selectedAge = ageSelect.value;
+            const selectedDrug = drugSelect.value;
+
+            // Find the data for the selected age
+            currentAgeData = pediatricData.find(data => data.age === selectedAge);
+
+            // Hide all cards initially
+            weightCard.style.display = 'none';
+            vitalsCard.style.display = 'none';
+            airwayCard.style.display = 'none';
+            defibCard.style.display = 'none';
+            drugDoseCard.style.display = 'none';
+
+            if (currentAgeData) {
+                // Display Weight
+                weightCard.style.display = 'block';
+                weightLbsSpan.textContent = currentAgeData.weight_lbs;
+                weightKgSpan.textContent = currentAgeData.weight_kg;
+
+                // Display Vitals
+                vitalsCard.style.display = 'block';
+                systolicBpSpan.textContent = currentAgeData.vitals.systolic_bp_low;
+                pulseSpan.textContent = currentAgeData.vitals.pulse;
+
+                // Display Airway/ET Tube
+                airwayCard.style.display = 'block';
+                etTubeSpan.textContent = currentAgeData.airway_et_tube;
+
+                // Display Defibrillation
+                defibCard.style.display = 'block';
+                defibSettingInitialSpan.textContent = currentAgeData.defibrillation.initial_dose;
+                defibSetting2ndSpan.textContent = currentAgeData.defibrillation.second_dose;
+                defibSetting3rdPlusSpan.textContent = currentAgeData.defibrillation.third_plus_dose;
+
+                // Display Drug Dose if a drug is selected
+                if (selectedDrug && currentAgeData.drugs.hasOwnProperty(selectedDrug)) {
+                    drugDoseCard.style.display = 'block';
+                    selectedDrugNameSpan.textContent = selectedDrug;
+                    drugDoseSpan.textContent = currentAgeData.drugs[selectedDrug];
+                } else {
+                    selectedDrugNameSpan.textContent = 'N/A';
+                    drugDoseSpan.textContent = 'N/A';
+                }
+            } else {
+                // Reset if no age is selected
+                weightLbsSpan.textContent = 'N/A';
+                weightKgSpan.textContent = 'N/A';
+                systolicBpSpan.textContent = 'N/A';
+                pulseSpan.textContent = 'N/A';
+                etTubeSpan.textContent = 'N/A';
+                defibSettingInitialSpan.textContent = 'N/A';
+                defibSetting2ndSpan.textContent = 'N/A';
+                defibSetting3rdPlusSpan.textContent = 'N/A';
+                selectedDrugNameSpan.textContent = 'N/A';
+                drugDoseSpan.textContent = 'N/A';
+            }
+        }
+
+        // Add event listeners
+        ageSelect.addEventListener('change', updateResults);
+        drugSelect.addEventListener('change', updateResults);
+
+        // Initial population of dropdowns when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            populateAgeDropdown();
+            populateDrugDropdown();
+            updateResults(); // Call once to set initial state (hidden cards)
+        });
+    </script>
+</body>
+</html>
